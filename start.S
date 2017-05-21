@@ -43,9 +43,11 @@ fiq:
 	
 reset:
 	bl set_svc
+	bl set_peri_port
 	bl disable_watchdog
 	bl disable_interrupt
 	bl disable_mmu
+	bl light_led
 	
 	
 set_svc:
@@ -54,6 +56,12 @@ set_svc:
 	orr	r0,r0,#0xd3
 	msr	cpsr,r0
 	mov pc, lr 
+	
+set_peri_port:
+	ldr r0, =0x70000000 
+	orr r0, r0, #0x13
+	mcr p15, 0, r0, c15, c2, 4
+	mov pc, lr
 
 #define WTCON 0x7E004000	
 disable_watchdog:
@@ -76,3 +84,19 @@ disable_mmu:
 	bic r0, r0, #0x7           @将最低三位清零，关闭MMU和DCache
 	mcr p15, 0, r0, c1, c0, 0  @将r0的值写入Control寄存器
 	mov pc, lr
+	
+#define GPMCON 0x7F008820
+#define GPMDAT 0x7F008824
+light_led:
+	ldr r0, =GPMCON
+	ldr r1, =0x1111
+	str r1, [r0]
+	
+	ldr r0, =GPMDAT
+	mov r1, #0xe    @点亮第一个LED灯
+	str r1, [r0]
+	mov pc, lr
+	
+	
+	
+	
