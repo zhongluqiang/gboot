@@ -43,6 +43,7 @@ fiq:
 	
 reset:
 	bl set_svc
+	bl disable_watchdog
 	
 	
 set_svc:
@@ -51,5 +52,10 @@ set_svc:
 	orr	r0,r0,#0xd3
 	msr	cpsr,r0
 	mov pc, lr 
-	
-	
+
+#define WTCON 0x7E004000	
+disable_watchdog:
+	ldr r0, =WTCON
+	mov r1, #0x0
+	str r1, [r0]
+	mov pc, lr
