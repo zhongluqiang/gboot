@@ -45,6 +45,7 @@ reset:
 	bl set_svc
 	bl disable_watchdog
 	bl disable_interrupt
+	bl disable_mmu
 	
 	
 set_svc:
@@ -67,4 +68,11 @@ disable_interrupt:
 	str r1, [r0]
 	ldr r0, =0x71300014
 	str r1, [r0]
+	mov pc, lr
+	
+disable_mmu:
+	mcr p15, 0, r0, c7, c7, 0  @让I/D Cache都失效
+	mrc p15, 0, r0, c1, c0, 0  @读取Control寄存器的值到r0
+	bic r0, r0, #0x7           @将最低三位清零，关闭MMU和DCache
+	mcr p15, 0, r0, c1, c0, 0  @将r0的值写入Control寄存器
 	mov pc, lr
