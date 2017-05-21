@@ -44,6 +44,7 @@ fiq:
 reset:
 	bl set_svc
 	bl disable_watchdog
+	bl disable_interrupt
 	
 	
 set_svc:
@@ -57,5 +58,13 @@ set_svc:
 disable_watchdog:
 	ldr r0, =WTCON
 	mov r1, #0x0
+	str r1, [r0]
+	mov pc, lr
+	
+disable_interrupt:
+	mvn r1, #0x0
+	ldr r0, =0x71200014
+	str r1, [r0]
+	ldr r0, =0x71300014
 	str r1, [r0]
 	mov pc, lr
