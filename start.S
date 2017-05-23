@@ -48,6 +48,7 @@ reset:
 	bl disable_interrupt
 	bl disable_mmu
 	bl clock_init
+	bl mem_init
 	bl light_led
 	
 	
