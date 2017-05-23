@@ -52,8 +52,8 @@ reset:
 	bl copy_to_ram
 	bl stack_init
 	bl  clear_bss
-	bl light_led
-	
+@	bl light_led
+	ldr pc, =gboot_main   @跳转到c语言中去执行
 	
 set_svc:
 	mrs	r0,cpsr
@@ -122,7 +122,7 @@ clock_init:
 	
 copy_to_ram:
 	ldr r0, =0x0c000000   @SRAM for 6410
-	ldr r1, =0x50008000   @DRAM for 5410
+	ldr r1, =0x50000000   @DRAM for 5410
 	add r3, r0, #1024*4
 	
 copy_loop:
