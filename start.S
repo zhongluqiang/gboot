@@ -49,6 +49,9 @@ reset:
 	bl disable_mmu
 	bl clock_init
 	bl mem_init
+	bl copy_to_ram
+	bl stack_init
+	bl  clear_bss
 	bl light_led
 	
 	
@@ -115,6 +118,34 @@ clock_init:
 	ldr r0, =CLK_SRC
 	mov r1, #0x3
 	str r1, [r0]
+	mov pc, lr
+	
+copy_to_ram:
+	ldr r0, =0x0c000000   @SRAM for 6410
+	ldr r1, =0x50008000   @DRAM for 5410
+	add r3, r0, #1024*4
+	
+copy_loop:
+	ldr r2, [r0], #4
+	str r2, [r1], #4
+	cmp r0, r3
+	bne copy_loop
+	mov pc, lr
+
+stack_init:
+	ldr sp, =0x54000000  @从内存的64MB处开始安排栈
+	mov pc, lr
+
+clear_bss:
+	ldr r0, =bss_start
+	ldr r1, =bss_end
+	cmp r0, r1
+	moveq pc, lr      @bss段为空，不需要清空
+clear_loop:
+	mov r2, #0
+	str r2, [r0], #4
+	cmp r0, r1
+	bne clear_loop
 	mov pc, lr
 	
 #define GPMCON 0x7F008820
