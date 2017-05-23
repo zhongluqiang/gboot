@@ -47,6 +47,7 @@ reset:
 	bl disable_watchdog
 	bl disable_interrupt
 	bl disable_mmu
+	bl clock_init
 	bl light_led
 	
 	
@@ -83,6 +84,36 @@ disable_mmu:
 	mrc p15, 0, r0, c1, c0, 0  @读取Control寄存器的值到r0
 	bic r0, r0, #0x7           @将最低三位清零，关闭MMU和DCache
 	mcr p15, 0, r0, c1, c0, 0  @将r0的值写入Control寄存器
+	mov pc, lr
+	
+#define CLK_DIV0 0x7E00F020
+#define OTHERS 0x7e00f900
+#define APLL_CON 0x7e00f00c
+#define MPLL_CON 0x7e00f010
+#define CLK_SRC 0x7e00f01c
+#define DIV_VAL ((0x0 << 0) | (0x1 << 9) | (0x1 << 8) | (0x3 << 12))
+#define PLL_VAL ((0x1 << 31) | (266 << 16) | (3 << 8) | (1 << 0))
+clock_init:
+	ldr r0, =CLK_DIV0
+	ldr r1, =DIV_VAL
+	str r1, [r0]
+	
+	ldr r0, =OTHERS
+	ldr r1, [r0]
+	bic r1, r1, #0xc0      @11000000，清除第6位的作用是让MPLL成为HCLK和PCLK的时钟源
+	str r1, [r0]
+	
+	ldr r0, =APLL_CON
+	ldr r1, =PLL_VAL
+	str r1, [r0]
+	
+	ldr r0, =MPLL_CON
+	ldr r1, =PLL_VAL
+	str r1, [r0]
+	
+	ldr r0, =CLK_SRC
+	mov r1, #0x3
+	str r1, [r0]
 	mov pc, lr
 	
 #define GPMCON 0x7F008820
