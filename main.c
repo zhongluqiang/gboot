@@ -5,7 +5,11 @@ int gboot_main()
 #endif
 	led_init();
 	
-	led_on();
+	button_init();
+	
+	irq_init();
+	
+	led_off();
 	
 	while(1);
 	

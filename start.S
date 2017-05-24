@@ -122,7 +122,7 @@ clock_init:
 	
 copy_to_ram:
 	ldr r0, =0x0c000000   @SRAM for 6410
-	ldr r1, =0x50000000   @DRAM for 5410
+	ldr r1, =0x50008000   @DRAM for 5410
 	add r3, r0, #1024*4
 	
 copy_loop:
@@ -133,7 +133,10 @@ copy_loop:
 	mov pc, lr
 
 stack_init:
-	ldr sp, =0x54000000  @从内存的64MB处开始安排栈
+	msr cpsr_c, #0xd2
+	ldr sp, =0x53000000  @初始化r13_irq
+	msr cpsr_c, #0xd3
+	ldr sp, =0x54000000  @初始化r13_svc
 	mov pc, lr
 
 clear_bss:

@@ -4,7 +4,7 @@ ENTRY(_start)
 SECTIONS
 {
 
-	. = 0x50000000;
+	. = 0x50008000;
 	
 	. = ALIGN(4);
 	.text :
