@@ -119,3 +119,86 @@ void nand_to_ram(unsigned long start_addr, unsigned char *sdram_addr, int size)
 	
 	/*TODO:代码量大于16KB时还要继续拷贝*/
 }
+
+int NF_erase(unsigned addr)
+{
+	int ret;
+	
+	/*选中芯片*/
+	select_chip();
+	
+	/*清除RnB*/
+	clear_RnB();
+	
+	/*发送命令0x60*/
+	nand_cmd(0x60);
+	
+	/*发送行地址*/
+	nand_addr(addr & 0xff);
+	nand_addr((addr >> 8) & 0xff);
+	nand_addr((addr >> 16) & 0xff);
+	
+	/*发送命令0xd0*/
+	nand_cmd(0xd0);
+	
+	/*等待RnB*/
+	wait_RnB();
+	
+	/*发送命令0x70*/
+	nand_cmd(0x70);
+	
+	/*读取擦除结果*/
+	ret = NFDATA;
+	
+	/*取消芯片选中信号*/
+	deselect_chip();
+	
+	return ret;
+}
+
+/*向addr所指的页写入一个page大小的数据*/
+int NF_page_write(unsigned long addr, unsigned char *buff)
+{
+	int i, ret;
+	
+	/*选中芯片*/
+	select_chip();
+	
+	/*清除RnB*/
+	clear_RnB();
+	
+	/*发送命令0x80*/
+	nand_cmd(0x80);
+	
+	/*发送列地址*/
+	nand_addr(0x00);
+	nand_addr(0x00);
+	
+	/*发送行地址*/
+	nand_addr(addr & 0xff);
+	nand_addr((addr >> 8) & 0xff);
+	nand_addr((addr >> 16) & 0xff);
+	
+	/*写入数据*/
+	for(i = 0; i < 1024 * 4; i++)
+	{
+		NFDATA = buff[i];
+	}
+	
+	/*发送命令0x10*/
+	nand_cmd(0x10);
+	
+	/*等待RnB*/
+	wait_RnB();
+	
+	/*发送命令0x70*/
+	nand_cmd(0x70);
+	
+	/*读取写入结果*/
+	ret = NFDATA;
+	
+	/*取消芯片选中信号*/
+	deselect_chip();
+	
+	return ret;
+}
