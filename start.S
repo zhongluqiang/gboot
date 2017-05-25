@@ -49,10 +49,12 @@ reset:
 	bl disable_mmu
 	bl clock_init
 	bl mem_init
-	bl copy_to_ram
-	bl stack_init
+	bl stack_init   @栈的初始化要位于代码拷贝之前，因为新的代码拷贝使用了C语言编写
 	bl  clear_bss
-@	bl light_led
+	
+	bl nand_init
+	bl copy_to_ram  @copy nand to ram
+
 	ldr pc, =gboot_main   @跳转到c语言中去执行
 	
 set_svc:
@@ -121,15 +123,14 @@ clock_init:
 	mov pc, lr
 	
 copy_to_ram:
-	ldr r0, =0x0c000000   @SRAM for 6410
-	ldr r1, =0x50008000   @DRAM for 5410
-	add r3, r0, #1024*4
+	mov r0, #0
+	ldr r1, =_start
+	ldr r2, =bss_end
+	sub r2, r2, r1
 	
-copy_loop:
-	ldr r2, [r0], #4
-	str r2, [r1], #4
-	cmp r0, r3
-	bne copy_loop
+	mov ip, lr
+	bl nand_to_ram
+	mov lr, ip
 	mov pc, lr
 
 stack_init:

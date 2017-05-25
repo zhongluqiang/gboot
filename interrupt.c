@@ -57,8 +57,9 @@ void key2_isr()
 void irq_init()
 {
 	//1.配置按键中断在下降沿产生，使用第1和第6个按键
-	EINT0CON0 = (0x2) | (0x2 << 8);
-	
+	//EINT0CON0 = (0x2) | (0x2 << 8);
+	EINT0CON0 = 0x2;
+		
 	//2.取消EINT0和EIN1的屏蔽
 	EINT0MASK = 0x0;
 	
