@@ -109,15 +109,27 @@ void NF_page_read(unsigned long addr, unsigned char *buff)
 
 void nand_to_ram(unsigned long start_addr, unsigned char *sdram_addr, int size)
 {
+	/*OK6410的Nandflash单页大小为4KB，但是前4个页都只用了上半页的
+	存储空间，导致启动时拷贝的前8K代码要从4个页拷贝，而不是2个页。
+	对于第4个页以后的页，才是全部用于存储代码。
+	*/
+
 	int i;
 	
-	/*拷贝前4页共16KB的代码到内存*/
-	for(i = 0; i < 4; i++, sdram_addr += 4096)
+	for (i = 0; i < 4; i++, sdram_addr+=2048) 
 	{
-		NF_page_read(i, sdram_addr);
+		NF_page_read(i,sdram_addr);
 	}
-	
-	/*TODO:代码量大于16KB时还要继续拷贝*/
+        
+	size -= 1024*8;
+        
+	for( i=4; size>0;)
+	{
+	    NF_page_read(i,sdram_addr);	
+	    size -= 4096;
+	    sdram_addr += 4096;
+	    i++;
+	}
 }
 
 int NF_erase(unsigned addr)
