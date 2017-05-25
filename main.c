@@ -20,7 +20,10 @@ int gboot_main()
 	if(buff[0] == 100)
 		led_on();
 	
-	while(1);
+	uart_init();
+	
+	while(1)
+		getc();
 	
 	return 0;
 }

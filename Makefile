@@ -1,4 +1,4 @@
-all:start.o mem.o main.o mmu.o led.o button.o interrupt.o nand.o
+all:start.o mem.o main.o mmu.o led.o button.o interrupt.o nand.o uart.o
 	arm-linux-ld -Tgboot.lds -o gboot.elf $^
 	arm-linux-objcopy -O binary gboot.elf gboot.bin
 	
