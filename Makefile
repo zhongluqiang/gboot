@@ -1,5 +1,6 @@
-OBJS := start.o mem.o main.o mmu.o led.o button.o interrupt.o nand.o uart.o 
+OBJS := start.o mem.o main.o
 OBJS += lib/lib.o
+OBJS += dev/dev.o
 
 INCLUDE := $(PWD)/include
 
@@ -21,7 +22,9 @@ gboot.elf:$(OBJS)
 	
 lib/lib.o:
 	make -C lib all
+	make -C dev all
 	
 clean:
 	rm -fr *.o *.elf *.bin
 	make -C lib clean
+	make -C dev clean
