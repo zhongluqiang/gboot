@@ -1,8 +1,6 @@
-
-int num;
-
 int gboot_main()
 {
+	int num;
 	unsigned char buff[4096];
 	
 #ifdef MMU_ON
@@ -25,10 +23,13 @@ int gboot_main()
 	
 	uart_init();
 	
+	dma_init();
+	dma_start();
+	
 	while(1)
 	{
-		printf("********************************\n\r");
-		printf("*************GBOOT**************\n\r");
+		printf("\n\r********************************\n\r");
+		printf("\n\r*************GBOOT**************\n\r");
 		printf("1:Download kernel from tftp server\n\r");
 		printf("2:Boot linux from RAM\n\r");
 		printf("3:Boot linux from NAND\n\r");
