@@ -25,6 +25,8 @@ int gboot_main()
 	
 	dma_init();
 	dma_start();
+
+    eth_init();
 	
 	while(1)
 	{

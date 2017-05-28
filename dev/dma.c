@@ -11,7 +11,7 @@
 
 #define UTXH0      		(volatile unsigned long *)0x7F005020
 
-char src[100] = "\n\rHello World-> This is a test!\n\r";
+char src[100] = "\r\nHello World-> This is a test!\r\n";
 
 void dma_init()
 {
