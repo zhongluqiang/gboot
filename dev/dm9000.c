@@ -1,18 +1,18 @@
 #include "dm9000x.h"
 
-#if 0
-#define DM9000_IO  0x18000000
-#define DM9000_DATA 0x18000004
-#else
 #define DM9000_IO  0x18000300
 #define DM9000_DATA 0x18000304
-#endif
 
-#define DM9000_BASE		0x18000000
+#define DM9000_BASE		0x18000300
 #define DM9000_ID		0x90000A46
 
-u8 mac_addr[6] = {4, 5, 6, 7, 8, 9};
 u8 buffer[1000];
+
+u8 host_mac_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; /*目的主机MAC地址*/
+u8 mac_addr[6] = {9,8,7,6,5,4};       /*本机MAC地址*/
+u8 ip_addr[4] = {192,168,0,233};      /*本机IP*/
+u8 host_ip_addr[4] = {192,168,0,111};  /*目的主机IP*/
+
 
 /*
    Read a byte from I/O port
@@ -32,39 +32,6 @@ DM9000_iow(int reg, u8 value)
 {
 	DM9000_outb(reg, DM9000_IO);
 	DM9000_outb(value, DM9000_DATA);
-}
-
-
-/*初始化DM9000使用的内存Bank*/
-void cs_init()
-{
-	
-}
-
-void dm9000_interrupt_init(void)
-{
-    /*将GPN7配置成中断功能*/
-#define GPNCON *(volatile unsigned*)0x7f008830
-    GPNCON &= (~(0x3 << 14));  /*bit[7]*/
-    GPNCON |= (0X2 << 14);
-
-    /*高电平触发*/
-#define EINT0CON0 *(volatile unsigned*)0x7f008900
-    EINT0CON0 &= (~0x7);
-    EINT0CON0 |= 0x1;
-
-    /*取消EINT1的屏蔽*/
-#define EINT0MASK *(volatile unsigned*)0x7f008920
-    EINT0MASK &= (~0x2);
-    EINT0MASK |= 0x2;
-
-    /*使能EINT1*/
-#define VIC0INTENABLE *(volatile unsigned*)0x71200010
-    VIC0INTENABLE |= 0x2;
-
-    /*首先清空中断*/
-#define EINT0PEND *(volatile unsigned*)0x7f008924
-    EINT0PEND |= 0x2;
 }
 
 void dm9000_reset(void)
@@ -108,16 +75,28 @@ u32 get_DM9000_ID(void)
     return id_val;
 }
 
+void cs_init()
+{ 
+	/*设置Bank1的数据宽度为16位*/
+#define SROM_BW (*(volatile unsigned *)0x70000000) 
+   SROM_BW &= (~(0xf<<4));
+   SROM_BW |=  (0x1<<4);
+
+#define SROM_BC1 (*(volatile unsigned *)0x70000008)
+   SROM_BC1 =(0<<0)|(0x2<<4)|(0x2<<8)|(0x2<<12)|(0x2<<16)|(0x2<<24)|(0x2<<28);
+
+}
+
 void eth_init()
 {
     int i, oft;
     u32 ID;
 
 	/*使能DM9000片选信号*/
-    /*ignored*/
+	cs_init();
 	
 	/*中断初始化*/
-    //dm9000_interrupt_init();
+    net_irq_init();
 
     /*复位设备*/
     dm9000_reset();
@@ -259,4 +238,11 @@ void int_issue()
 {
     eth_rx(buffer);
 }
+
+void dm9000_arp()
+{
+	while(1)
+		arp_request();
+}
+
 

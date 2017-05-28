@@ -8,8 +8,8 @@ int gboot_main()
 #endif
 
 	led_init();
-	button_init();
-	irq_init();
+	//button_init();
+	//irq_init();
 	led_off();
 	
 	NF_erase(128*1 + 1); /*擦除第2个块，传入第2个块中第1个页的行地址*/
@@ -27,6 +27,7 @@ int gboot_main()
 	dma_start();
 
     eth_init();
+	dm9000_arp();
 	
 	while(1)
 	{
