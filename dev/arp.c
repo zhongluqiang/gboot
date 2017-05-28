@@ -5,7 +5,7 @@
 /*1.发送arp请求包*/
 void arp_request()
 {
-	u32 packet_len;
+	u32 pkt_len;
 	ARP_HDR arp_tx_buffer;
 
 	memset(&arp_tx_buffer, 0, sizeof(arp_tx_buffer));
@@ -27,10 +27,34 @@ void arp_request()
      memcpy(arp_tx_buffer.sipaddr,ip_addr,4);
      memcpy(arp_tx_buffer.dipaddr,host_ip_addr,4);
 
-     packet_len = 14+28;
+     pkt_len = 14+28;
      
      /*2.调用dm9000发送函数，发送应答包*/	
-     eth_send(&arp_tx_buffer,packet_len);
+     eth_send(&arp_tx_buffer,pkt_len);
 }
 
+/*2.解析arp应答包，提取mac*/
+u8 arp_process()
+{
+	u8 host_ip[4];  /*目的主机IP*/
+	u8 host_mac[6];
+
+    u32 i;
+    
+    if (packet_len<28)
+        return 0;
+    
+    memcpy(host_ip,arpbuf.sipaddr,4);
+    printf("host ip is : ");
+    for(i=0;i<4;i++)
+        printf("%03d ",host_ip[i]);
+    printf("\n\r");
+    
+    memcpy(host_mac,arpbuf.smac,6);
+    printf("host mac is : ");
+    for(i=0;i<6;i++)
+        printf("%02x ",host_mac[i]);
+    printf("\n\r");
+	return 0;
+}
 

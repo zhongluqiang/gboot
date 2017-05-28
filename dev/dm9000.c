@@ -1,4 +1,5 @@
 #include "dm9000x.h"
+#include "arp.h"
 
 #define DM9000_IO  0x18000300
 #define DM9000_DATA 0x18000304
@@ -6,7 +7,10 @@
 #define DM9000_BASE		0x18000300
 #define DM9000_ID		0x90000A46
 
-u8 buffer[1000];
+ARP_HDR arpbuf;
+u8 *buffer = &arpbuf;
+u16 packet_len;
+
 
 u8 host_mac_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; /*目的主机MAC地址*/
 u8 mac_addr[6] = {9,8,7,6,5,4};       /*本机MAC地址*/
@@ -157,7 +161,7 @@ int eth_send(void *packet, u32 length)
 {
     /*禁止中断*/
     DM9000_iow(DM9000_IMR, 0x80);
-    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
+    //DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
     /*写入发送数据的长度*/
 	/* Set TX length to DM9000 */
@@ -184,7 +188,7 @@ int eth_send(void *packet, u32 length)
 
     /*清除发送状态*/
     DM9000_iow(DM9000_NSR, 0x2c);
-    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
+    //DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
     /*恢复中断*/
     DM9000_iow(DM9000_IMR, 0x81);
@@ -194,20 +198,32 @@ int eth_send(void *packet, u32 length)
 
 int eth_rx(u8 *data)
 {
-    u32 i;
-    u8 status;
-    u16 len;
+	u16 status,len;
     u16 tmp;
+	u32 i;
+	u8 ready = 0;
     
 
     /*判断是否中断，如果产生则清除中断*/
-    if (!(DM9000_ior(DM9000_ISR) & 0x01)) /* Rx-ISR bit must be set. */
+    if (DM9000_ior(DM9000_ISR) & 0x01) /* Rx-ISR bit must be set. */
+    {
+        DM9000_iow(DM9000_ISR, 0x01);
+    }
+	else
+	{
 		return 0;
-    
-    DM9000_iow(DM9000_ISR, 0x01); /* clear PR status latched in bit 0 */
+	}
 
     /*空读*/
-    DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
+    ready = DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
+	if((ready & 0x01) != 0x01)
+	{
+		ready = DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
+		if((ready & 0x01) != 0x01)
+		{
+			return 0;
+		}
+	}
 
     /*读取状态*/
     status = DM9000_ior(DM9000_MRCMD);
@@ -216,12 +232,7 @@ int eth_rx(u8 *data)
     len = DM9000_ior(DM9000_MRCMD);
 
     /*读取包的数据*/
-    if(len < 0x40 || len > DM9000_PKT_MAX)
-    {
-        printf("rx length error\r\n");
-        dm9000_reset();
-    }
-    else
+    if(len < DM9000_PKT_MAX)
     {
         for(i = 0; i < len; i +=2)
         {
@@ -231,12 +242,15 @@ int eth_rx(u8 *data)
         }
     }
 
-    return 1;
+    return len;
 }
 
 void int_issue()
 {
-    eth_rx(buffer);
+	printf("int_issued\r\n");
+    packet_len = eth_rx(buffer); 
+	printf("packet_len:%d\r\n", packet_len);
+	arp_process();
 }
 
 void dm9000_arp()

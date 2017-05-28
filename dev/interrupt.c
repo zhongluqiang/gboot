@@ -71,7 +71,7 @@ void net_isr()
 	int_issue();
 	
 	//3.清除中断
-	EINT0PEND |= 0x2;
+	EINT0PEND |= (0x1 << 7);
 	VIC0ADDRESS = 0x0;
 	
 	//4.恢复环境
@@ -89,18 +89,17 @@ net_irq_init()
     GPNCON |= (0X2 << 14);
 
     /*高电平触发*/
-    EINT0CON0 &= (~0x7);
-    EINT0CON0 |= 0x1;
+    EINT0CON0 &= (~(0x7 << 12));
+    EINT0CON0 |= 0x1 << 12;
 
-    /*取消EINT1的屏蔽*/
-    EINT0MASK &= (~0x2);
-    EINT0MASK |= 0x2;
+    /*取消EINT7的屏蔽*/
+    EINT0MASK &= (~(0x1 << 7));
 
-    /*使能EINT1*/
+    /*使能EINT7*/
     VIC0INTENABLE |= 0x2;
 
     /*首先清空中断*/
-	EINT0PEND |= 0x2;
+	EINT0PEND |= (0x1 << 7);
 	VIC0ADDRESS = 0x0;
 
 	/*设置网络中断的跳转地址*/

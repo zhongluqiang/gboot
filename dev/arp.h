@@ -26,4 +26,8 @@ extern u8 mac_addr[6];
 extern u8 ip_addr[4];
 extern u8 host_ip_addr[4];
 
+extern u16 packet_len;
+extern ARP_HDR arpbuf;
+
+
 
