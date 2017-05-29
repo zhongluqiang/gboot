@@ -1,4 +1,4 @@
-objs := button.o interrupt.o led.o mmu.o nand.o uart.o dma.o dm9000.o
+objs := arp.o
 
 all : $(objs)
 

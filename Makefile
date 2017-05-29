@@ -1,6 +1,8 @@
 OBJS := start.o mem.o main.o
-OBJS += lib/lib.o
-OBJS += dev/dev.o
+
+OBJS += dev/*.o
+OBJS += lib/*.o
+OBJS += net/*.o
 
 INCLUDE := $(PWD)/include
 
@@ -20,11 +22,17 @@ gboot.elf:$(OBJS)
 %.o:%.c
 	arm-linux-gcc  $(CFLAGS) -g -c $<
 	
-lib/lib.o:
+lib/*.o:
 	make -C lib all
+
+dev/*.o:
 	make -C dev all
+	
+net/*.o:
+	make -C net all
 	
 clean:
 	rm -fr *.o *.elf *.bin
 	make -C lib clean
 	make -C dev clean
+	make -C net clean

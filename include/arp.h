@@ -21,13 +21,15 @@ typedef struct arp_hdr
     u8 dipaddr[4];
 }ARP_HDR;
 
+#define PROTO_ARP 0x0806
+#define PROTO_IP 0x0800
+#define PROTO_UDP 0x11
+
+
+extern const u8 mac_addr[6];
+extern const u8 ip_addr[4];
+
+extern const u8 host_ip_addr[4];
 extern u8 host_mac_addr[6];
-extern u8 mac_addr[6];
-extern u8 ip_addr[4];
-extern u8 host_ip_addr[4];
-
-extern u16 packet_len;
-extern ARP_HDR arpbuf;
-
 
 

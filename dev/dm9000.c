@@ -7,15 +7,14 @@
 #define DM9000_BASE		0x18000300
 #define DM9000_ID		0x90000A46
 
-ARP_HDR arpbuf;
-u8 *buffer = &arpbuf;
-u16 packet_len;
+u8 buffer[1500];
 
 
-u8 host_mac_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; /*目的主机MAC地址*/
-u8 mac_addr[6] = {9,8,7,6,5,4};       /*本机MAC地址*/
-u8 ip_addr[4] = {192,168,0,233};      /*本机IP*/
-u8 host_ip_addr[4] = {192,168,0,111};  /*目的主机IP*/
+const u8 mac_addr[6] = {9,8,7,6,5,4};       /*本机MAC地址*/
+const u8 ip_addr[4] = {192,168,0,233};      /*本机IP*/
+
+const u8 host_ip_addr[4] = {192,168,0,111};   /*目的主机IP*/
+u8 host_mac_addr[6];					/*目的主机IP*/
 
 
 /*
@@ -247,16 +246,10 @@ int eth_rx(u8 *data)
 
 void int_issue()
 {
-	printf("int_issued\r\n");
-    packet_len = eth_rx(buffer); 
+	u16 packet_len;
+
+    packet_len = eth_rx(&buffer[0]); 
 	printf("packet_len:%d\r\n", packet_len);
-	arp_process();
+	net_handle(&buffer[0], packet_len);
 }
-
-void dm9000_arp()
-{
-	while(1)
-		arp_request();
-}
-
 
