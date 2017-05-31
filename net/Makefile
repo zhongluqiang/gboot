@@ -1,4 +1,4 @@
-objs := arp.o
+objs := arp.o tftp.o net.o
 
 all : $(objs)
 

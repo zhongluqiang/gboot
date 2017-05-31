@@ -1,6 +1,15 @@
-#include "arp.h"
+#include "common.h"
+#include "net.h"
 
 #define HON(n) ((((u16)((n) & 0xff)) << 8) | (((n) & 0xff00) >> 8))
+
+void arp_start(void)
+{
+	g_arpwait_try = 0;
+	g_arp_restart_try = 0;
+
+	arp_request();
+}
 
 /*1.发送arp请求包*/
 void arp_request()
@@ -10,7 +19,7 @@ void arp_request()
 	const u8 broadcast_mac_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff};
 
 	memset(&arp_tx_buffer, 0, sizeof(arp_tx_buffer));
-	
+
      /*1.构成arp请求包*/
      memcpy(arp_tx_buffer.ethhdr.d_mac,broadcast_mac_addr,6);
      memcpy(arp_tx_buffer.ethhdr.s_mac,mac_addr,6);
@@ -79,23 +88,39 @@ u8 arp_process(u8 *buf, u32 length)
 	{
 		case 2: /*arp响应包，进行MAC地址解析*/
 			printf("arp response packet received\r\n");
+			/*
 			memcpy(host_ip_addr, arpbuf->sipaddr, 4);
 			printf("host ip is : ");
 		    for(i=0;i<4;i++)
 		        printf("%03d ",host_ip_addr[i]);
 		    printf("\n\r");
+		    */
 
 			memcpy(host_mac_addr, arpbuf->smac, 6);
 			printf("host mac is : ");
 		    for(i=0;i<6;i++)
 		        printf("%02x ",host_mac_addr[i]);
 			printf("\n\r");
+
+			g_netstate = NETLOOP_SUCCESS;
+			
 			break;
 			
 		case 1: /*arp请求包，发送ARP响应包*/
 			printf("arp request packet received\r\n");
+			printf("host ip is : ");
+			 for(i=0;i<4;i++)
+		        printf("%03d ",arpbuf->sipaddr[i]);
+		    printf("\n\r");
+			
+			printf("host mac is : ");
+		    for(i=0;i<6;i++)
+		        printf("%02x ",arpbuf->ethhdr.s_mac[i]);
+			printf("\n\r");
+			
 			arp_response(arpbuf->ethhdr.s_mac, arpbuf->sipaddr);
 			break;
+			
 		default:
 			printf("unknown arp packet!!!\r\n");
 			break;
@@ -104,14 +129,29 @@ u8 arp_process(u8 *buf, u32 length)
 	return 0;
 }
 
-void dm9000_arp()
+void udp_process(u8* buf, u32 len)
 {
-	arp_request();
+     UDP_HDR *udphdr = (UDP_HDR *)buf;
+     
+     tftp_process(buf,len,HON(udphdr->sport));     	
 }
 
 
-u8 ip_process(u8 *buf, u32 length)
+u8 ip_process(u8 *buf, u32 len)
 {
+	IP_HDR *p = (IP_HDR *)buf;	
+		 
+	switch(p->proto)
+	{
+		case PROTO_UDP:
+			printf("dup packet received\r\n");
+			udp_process(buf,len);
+			break;
+		 
+		default:
+			break; 
+	}
+
 	return 0;
 }
 

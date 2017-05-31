@@ -1,42 +1,27 @@
+#include "net.h"
+
 int gboot_main()
 {
 	int num;
-	//unsigned char buff[4096];
-	
-#ifdef MMU_ON
-	mmu_init();
-#endif
+
+	uart_init();
 
 	led_init();
 	led_on();
-	//button_init();
-	//irq_init();
-	//led_off();
-	
-	// NF_erase(128*1 + 1); /*擦除第2个块，传入第2个块中第1个页的行地址*/
-	// buff[0] = 100;
-	// NF_page_write(128*1+1, buff);
-	// buff[0] = 10;
-	// NF_page_read(128*1+1, buff);
-	
-	// if(buff[0] == 100)
-		// led_on();
-	
-	uart_init();
-	
-	//dma_init();
-	//dma_start();
 
+	button_init();
+	irq_init();
+	
     eth_init();
 
 	while(1)
 	{
-		printf("\n\r********************************\n\r");
 		printf("\n\r*************GBOOT**************\n\r");
 		printf("0:ARP request\r\n");
 		printf("1:Download kernel from tftp server\n\r");
 		printf("2:Boot linux from RAM\n\r");
 		printf("3:Boot linux from NAND\n\r");
+		printf("\n\r*************select*************\n\r");
 		printf("pleare enter your selection:");
 		
 		scanf("%d", &num);
@@ -44,10 +29,10 @@ int gboot_main()
 		switch(num)
 		{
 			case 0:
-				dm9000_arp();
+				net_loop(ARP);
 				break;
 			case 1:
-			//tftp_download();
+				net_loop(TFTP);
 				break;
 			case 2:
 			//boot_linux_ram();

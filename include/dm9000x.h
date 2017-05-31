@@ -1,9 +1,7 @@
 #ifndef DM9000_H
 #define DM9000_H
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
+#include "common.h"
 
 #define __raw_readb(addr) (*(volatile u8 *)(addr))
 #define __raw_readw(addr) (*(volatile u16 *)(addr))
@@ -19,6 +17,12 @@ typedef unsigned int u32;
 #define DM9000_inb(r) __raw_readb(r)
 #define DM9000_inw(r) __raw_readw(r)
 #define DM9000_inl(r) __raw_readl(r)
+
+#define DM9000_IO  0x18000300
+#define DM9000_DATA 0x18000304
+
+#define DM9000_BASE		0x18000300
+#define DM9000_ID		0x90000A46
 
 #define DM9000_PKT_MAX		1536	/* Received packet max size */
 

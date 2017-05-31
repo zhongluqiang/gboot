@@ -1,21 +1,7 @@
 #include "dm9000x.h"
-#include "arp.h"
-
-#define DM9000_IO  0x18000300
-#define DM9000_DATA 0x18000304
-
-#define DM9000_BASE		0x18000300
-#define DM9000_ID		0x90000A46
+#include "net.h"
 
 u8 buffer[1500];
-
-
-const u8 mac_addr[6] = {9,8,7,6,5,4};       /*本机MAC地址*/
-const u8 ip_addr[4] = {192,168,0,233};      /*本机IP*/
-
-const u8 host_ip_addr[4] = {192,168,0,111};   /*目的主机IP*/
-u8 host_mac_addr[6];					/*目的主机IP*/
-
 
 /*
    Read a byte from I/O port
@@ -78,6 +64,22 @@ u32 get_DM9000_ID(void)
     return id_val;
 }
 
+#define Tacs  2
+#define Tcos  2
+#define Tacc  3
+#define Tcoh  2
+#define Tcah  2
+#define Tacp  0
+
+static void dm9000_outblk_16bit(volatile void *data_ptr, int count)
+{
+	int i;
+	u32 tmplen = (count + 1) / 2;
+
+	for (i = 0; i < tmplen; i++)
+		DM9000_outw(((u16 *) data_ptr)[i], DM9000_DATA);
+}
+
 void cs_init()
 { 
 	/*设置Bank1的数据宽度为16位*/
@@ -86,7 +88,7 @@ void cs_init()
    SROM_BW |=  (0x1<<4);
 
 #define SROM_BC1 (*(volatile unsigned *)0x70000008)
-   SROM_BC1 =(0<<0)|(0x2<<4)|(0x2<<8)|(0x2<<12)|(0x2<<16)|(0x2<<24)|(0x2<<28);
+	SROM_BC1 = (Tacs << 28) | (Tcos << 24) | (Tacc << 16) | (Tcoh << 12) | 	(Tcah << 8)  | (Tacp << 4);
 
 }
 
@@ -95,11 +97,8 @@ void eth_init()
     int i, oft;
     u32 ID;
 
-	/*使能DM9000片选信号*/
+	/*内存bank初始化，DM9000使用内存bank1*/
 	cs_init();
-	
-	/*中断初始化*/
-    net_irq_init();
 
     /*复位设备*/
     dm9000_reset();
@@ -113,7 +112,6 @@ void eth_init()
     }
     printf("Found DM9000 ID:%X at address %x !\r\n", ID,  DM9000_BASE);
 	
-	/*MAC初始化*/
     /* Program operating register, only internal phy supported */
 	DM9000_iow(DM9000_NCR, 0x0);
 	/* TX Polling clear */
@@ -135,32 +133,28 @@ void eth_init()
     /* fill device MAC address registers */
 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
 		DM9000_iow(oft, mac_addr[i]);
-	for (i = 0, oft = 0x16; i < 8; i++, oft++)
-		DM9000_iow(oft, 0xff);
+	//for (i = 0, oft = 0x16; i < 8; i++, oft++)
+		//DM9000_iow(oft, 0xff);
 	
 	/*激活DM9000*/
 	/* RX enable */
-	DM9000_iow(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
+	DM9000_iow(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN); /*不接收广播包，不设置RCR_ALL*/
 	/* Enable TX/RX interrupt mask */
 	DM9000_iow(DM9000_IMR, IMR_PAR);
 
     return;
 }
 
-static void dm9000_outblk_16bit(volatile void *data_ptr, int count)
+void eth_halt(void)
 {
-	int i;
-	u32 tmplen = (count + 1) / 2;
-
-	for (i = 0; i < tmplen; i++)
-		DM9000_outw(((u16 *) data_ptr)[i], DM9000_DATA);
+	
 }
 
 int eth_send(void *packet, u32 length)
 {
     /*禁止中断*/
     DM9000_iow(DM9000_IMR, 0x80);
-    //DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
+    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
     /*写入发送数据的长度*/
 	/* Set TX length to DM9000 */
@@ -181,13 +175,14 @@ int eth_send(void *packet, u32 length)
     while(1)
     {
         u8 status = DM9000_ior(DM9000_TCR);
+		printf("sending data...\r\n");
         if(!(status & 0x1))
             break;
     }
 
     /*清除发送状态*/
     DM9000_iow(DM9000_NSR, 0x2c);
-    //DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
+    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
     /*恢复中断*/
     DM9000_iow(DM9000_IMR, 0x81);
@@ -195,7 +190,7 @@ int eth_send(void *packet, u32 length)
     return 1;
 }
 
-int eth_rx(u8 *data)
+u16 eth_rx(void)
 {
 	u16 status,len;
     u16 tmp;
@@ -229,6 +224,7 @@ int eth_rx(u8 *data)
 
     /*读取包的长度*/
     len = DM9000_ior(DM9000_MRCMD);
+	printf("packet length:%d\r\n", len);
 
     /*读取包的数据*/
     if(len < DM9000_PKT_MAX)
@@ -236,20 +232,14 @@ int eth_rx(u8 *data)
         for(i = 0; i < len; i +=2)
         {
             tmp = DM9000_inw(DM9000_DATA);
-            data[i] = tmp & 0xff;
-            data[i+1] = (tmp>>8) & 0xff;
+            buffer[i] = tmp & 0xff;
+            buffer[i+1] = (tmp>>8) & 0xff;
         }
     }
+
+	net_handle(&buffer[0], len);
 
     return len;
 }
 
-void int_issue()
-{
-	u16 packet_len;
-
-    packet_len = eth_rx(&buffer[0]); 
-	printf("packet_len:%d\r\n", packet_len);
-	net_handle(&buffer[0], packet_len);
-}
 

@@ -135,9 +135,9 @@ copy_to_ram:
 
 stack_init:
 	msr cpsr_c, #0xd2
-	ldr sp, =0x53000000  @初始化r13_irq
+	ldr sp, =0x55000000  @初始化r13_irq
 	msr cpsr_c, #0xd3
-	ldr sp, =0x54000000  @初始化r13_svc
+	ldr sp, =0x57000000  @初始化r13_svc
 	mov pc, lr
 
 clear_bss:

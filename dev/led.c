@@ -6,6 +6,7 @@
 #define GPMDAT (*(volatile unsigned long *)0x7F008824)	
 #endif
 
+
 void led_init()
 {
 	GPMCON = 0x1111;
