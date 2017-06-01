@@ -1,4 +1,4 @@
-OBJS := start.o mem.o main.o
+OBJS := start.o mem.o main.o boot.o
 
 OBJS += dev/*.o
 OBJS += lib/*.o

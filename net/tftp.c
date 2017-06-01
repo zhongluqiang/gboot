@@ -170,5 +170,5 @@ void tftp_process(u8 *buf, u32 len, u16 port)
 void tftp_start(void)
 {
 	/*·¢ËÍtftpÇëÇó°ü*/
-	tftp_send_request("gboot.bin");
+	tftp_send_request("zImage");
 }

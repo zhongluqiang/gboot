@@ -1,0 +1,1 @@
+OK6410内核，适用256MB内存，2G Nandflash版本

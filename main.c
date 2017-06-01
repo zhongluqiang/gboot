@@ -1,12 +1,5 @@
 #include "net.h"
 
-void boot_linux_ram()
-{
-	void (*p)(void);
-	p = (void (*)(void))TFTP_DOWNADDR;
-	p();
-}
-
 int gboot_main()
 {
 	int num;
@@ -23,12 +16,10 @@ int gboot_main()
 
 	while(1)
 	{
-		printf("gboot_main addr:%p\r\n", gboot_main);
 		printf("\n\r*************GBOOT**************\n\r");
 		printf("0:ARP request\r\n");
 		printf("1:Download kernel from tftp server\n\r");
-		printf("2:Boot linux from RAM\n\r");
-		printf("3:Boot linux from NAND\n\r");
+		printf("2:Boot linux from RAM addr 0x50008000\n\r");
 		printf("\n\r*************select*************\n\r");
 		printf("pleare enter your selection:");
 		
@@ -43,10 +34,7 @@ int gboot_main()
 				net_loop(TFTP);
 				break;
 			case 2:
-				boot_linux_ram();
-				break;
-			case 3:
-			//boot_linux_nand();
+				boot_linux();
 				break;
 			default:
 			printf("Error: wrong selection!\n\r");
