@@ -113,12 +113,16 @@ u8 arp_process(u8 *buf, u32 length)
 		        printf("%03d ",arpbuf->sipaddr[i]);
 		    printf("\n\r");
 			
-			printf("host mac is : ");
-		    for(i=0;i<6;i++)
-		        printf("%02x ",arpbuf->ethhdr.s_mac[i]);
-			printf("\n\r");
+			printf("target ip is : ");
+			 for(i=0;i<4;i++)
+		        printf("%03d ",arpbuf->dipaddr[i]);
+		    printf("\n\r");
 			
-			arp_response(arpbuf->ethhdr.s_mac, arpbuf->sipaddr);
+			if(memcmp(arpbuf->dipaddr, ip_addr, 4) != 0) /*不是对本主机的arp请求不响应*/
+				break;
+			
+			printf("send arp response\r\n");
+			arp_response(arpbuf->smac, arpbuf->sipaddr);
 			break;
 			
 		default:
@@ -144,30 +148,27 @@ u8 ip_process(u8 *buf, u32 len)
 	switch(p->proto)
 	{
 		case PROTO_UDP:
-			printf("dup packet received\r\n");
 			udp_process(buf,len);
 			break;
-		 
 		default:
+			printf("unsupported ip packet\r\n");
 			break; 
 	}
 
 	return 0;
 }
 
-void net_handle(u8 *buf, u32 len)
+void net_receive(u8 *buf, u32 len)
 {
      ETH_HDR *p = (ETH_HDR *)buf;
      
      switch (HON(p->type))
      {
 		case PROTO_ARP:
-			printf("arp packet received\r\n");
 			arp_process(buf,len);
 			break;
 
 		case PROTO_IP:
-			printf("ip packet received\r\n");
 			ip_process(buf,len);
 			break;
 			

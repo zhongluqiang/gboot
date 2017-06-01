@@ -18,7 +18,7 @@ int g_arp_restart_try; /*arp重启次数*/
 
 void arp_timeout_check()
 {
-	if(!memcmp(host_mac_addr, null_mac_addr, 6)) /*已解析成功*/
+	if(memcmp(host_mac_addr, null_mac_addr, 6) != 0) /*已解析成功*/
 		return;
 
 	++g_arpwait_try;

@@ -14,6 +14,9 @@ typedef enum { BOOTP, RARP, ARP, TFTP, DHCP, PING, DNS, NFS, CDP, NETCONS, SNTP 
 #define PROTO_ARP 0x0806
 #define PROTO_IP 0x0800
 #define PROTO_UDP 0x11
+#define PROTO_TCP 0x6
+#define PROTO_ICMP 0x1
+#define PROTO_IGMP 0x2
 
 typedef struct eth_hdr
 {
@@ -78,5 +81,7 @@ extern u8 host_mac_addr[6];			/*目的主机IP*/
 extern int g_netstate;	/*网络状态*/
 extern int g_arpwait_try;  /*arp等待响应次数*/
 extern int g_arp_restart_try; /*arp重启次数*/
+
+#define TFTP_DOWNADDR 0x50008000
 
 #endif

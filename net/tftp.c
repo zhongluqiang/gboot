@@ -35,7 +35,7 @@ void tftp_send_request(const char *filename)
     UDP_HDR *udphdr;
     u8 *iphdr;
     
-    ptftp[0] = 0x00;
+    ptftp[0] = 0x00; /*操作码，两字节，读请求opcode=1，按照大端字节序进行赋值*/
     ptftp[1] = 0x01;
     tftp_len += 2 ;
     
@@ -51,13 +51,13 @@ void tftp_send_request(const char *filename)
     
     
     
-    udphdr = (UDP_HDR*)(ptftp-sizeof(UDP_HDR));
-    iphdr =  ptftp-sizeof(UDP_HDR)+ sizeof(ETH_HDR);
+    udphdr = (UDP_HDR*)(ptftp-sizeof(UDP_HDR));  /*UDP_HDR包含一个IP头结构体*/
+    iphdr =  ptftp-sizeof(UDP_HDR) + sizeof(ETH_HDR); /*IP_HDR包含一个ETH_HDR结构体*/
     
     /*UDP帧头信息*/
     udphdr->sport = HON(48915);
     udphdr->dport = HON(69);
-    udphdr->len = HON(tftp_len+sizeof(UDP_HDR)-sizeof(IP_HDR));
+    udphdr->len = HON(tftp_len+sizeof(UDP_HDR)-sizeof(IP_HDR)); /*UDP中的长度字段包含本身8字节的长度*/
     udphdr->udpchksum = 0x00;
     
     /*IP帧头信息*/
@@ -67,7 +67,7 @@ void tftp_send_request(const char *filename)
     udphdr->iphdr.ipid = HON(0x00);
     udphdr->iphdr.ipoffset = HON(0x4000);
     udphdr->iphdr.ttl = 0xff;
-    udphdr->iphdr.proto = 17;
+    udphdr->iphdr.proto = PROTO_UDP;
     memcpy(udphdr->iphdr.srcipaddr,ip_addr,4);
     memcpy(udphdr->iphdr.destipaddr,host_ip_addr,4);
     udphdr->iphdr.ipchksum = 0;
@@ -120,7 +120,7 @@ void tftp_send_ack(u16 blocknum)
     memcpy(udphdr->iphdr.ethhdr.s_mac,mac_addr,6);
     memcpy(udphdr->iphdr.ethhdr.d_mac,host_mac_addr,6);
     udphdr->iphdr.ethhdr.type = HON(PROTO_IP);
-    
+
     eth_send((u32 *)udphdr,sizeof(UDP_HDR)+tftp_len);
 }
 
@@ -140,12 +140,18 @@ void tftp_process(u8 *buf, u32 len, u16 port)
      {
      	 if (HON(ptftp->blocknum) == curblock)
      	 {
-     	 	  tftp_down_addr = (u8*)(0x50008000 + (curblock - 1) * 512);
+     	 	  tftp_down_addr = (u8*)(TFTP_DOWNADDR + (curblock - 1) * 512);
               for (i = 0;i<(tftp_len-4);i++)
               {
                   *(tftp_down_addr) = *(ptftp->data+i);
+				  
+				  if(curblock == 1)
+				  {
+						//printf("curaddr:%x %d,  data:%x#%x\r\n", tftp_down_addr, tftp_down_addr, tftp_down_addr[0], *(ptftp->data+i));
+				  }
+				  
 				  ++tftp_down_addr;
-              }	
+              }
          
               tftp_send_ack(HON(ptftp->blocknum));
               
@@ -155,6 +161,7 @@ void tftp_process(u8 *buf, u32 len, u16 port)
               {
                   curblock = 1;
 				  printf("tftp download over\r\n");
+				  g_netstate = NETLOOP_SUCCESS;
               	}
          }
     }
@@ -162,5 +169,6 @@ void tftp_process(u8 *buf, u32 len, u16 port)
 
 void tftp_start(void)
 {
-	
+	/*发送tftp请求包*/
+	tftp_send_request("gboot.bin");
 }

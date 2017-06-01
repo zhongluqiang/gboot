@@ -1,13 +1,20 @@
 #include "net.h"
 
+void boot_linux_ram()
+{
+	void (*p)(void);
+	p = (void (*)(void))TFTP_DOWNADDR;
+	p();
+}
+
 int gboot_main()
 {
 	int num;
 
 	uart_init();
-
+	
 	led_init();
-	led_on();
+	led_off();
 
 	button_init();
 	irq_init();
@@ -16,6 +23,7 @@ int gboot_main()
 
 	while(1)
 	{
+		printf("gboot_main addr:%p\r\n", gboot_main);
 		printf("\n\r*************GBOOT**************\n\r");
 		printf("0:ARP request\r\n");
 		printf("1:Download kernel from tftp server\n\r");
@@ -35,7 +43,7 @@ int gboot_main()
 				net_loop(TFTP);
 				break;
 			case 2:
-			//boot_linux_ram();
+				boot_linux_ram();
 				break;
 			case 3:
 			//boot_linux_nand();

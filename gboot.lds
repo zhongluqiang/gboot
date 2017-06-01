@@ -3,8 +3,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-
-	. = 0x50008000;
+	. = 0x5a000000;
 	
 	. = ALIGN(4);
 	.text :

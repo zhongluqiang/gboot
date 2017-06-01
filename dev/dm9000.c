@@ -133,12 +133,12 @@ void eth_init()
     /* fill device MAC address registers */
 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
 		DM9000_iow(oft, mac_addr[i]);
-	//for (i = 0, oft = 0x16; i < 8; i++, oft++)
-		//DM9000_iow(oft, 0xff);
+	for (i = 0, oft = 0x16; i < 8; i++, oft++)
+		DM9000_iow(oft, 0);  /*将广播地址设为0，避免接收多播和广播包*/
 	
 	/*激活DM9000*/
 	/* RX enable */
-	DM9000_iow(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN); /*不接收广播包，不设置RCR_ALL*/
+	DM9000_iow(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
 	/* Enable TX/RX interrupt mask */
 	DM9000_iow(DM9000_IMR, IMR_PAR);
 
@@ -154,19 +154,19 @@ int eth_send(void *packet, u32 length)
 {
     /*禁止中断*/
     DM9000_iow(DM9000_IMR, 0x80);
-    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
+    //DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
-    /*写入发送数据的长度*/
+	/*写入发送数据的长度*/
 	/* Set TX length to DM9000 */
 	DM9000_iow(DM9000_TXPLL, length & 0xff);
 	DM9000_iow(DM9000_TXPLH, (length >> 8) & 0xff);
-    
-    /*写入要发送的数据*/
+
+	/*写入要发送的数据*/
 	/* Move data to DM9000 TX RAM */
 	DM9000_outb(DM9000_MWCMD, DM9000_IO); /* Prepare for TX-data */
     /* push the data to the TX-fifo */
 	dm9000_outblk_16bit(packet, length);
-    
+   
     /*启动发送*/
 	/* Issue TX polling command */
 	DM9000_iow(DM9000_TCR, TCR_TXREQ); /* Cleared after TX complete */
@@ -175,18 +175,18 @@ int eth_send(void *packet, u32 length)
     while(1)
     {
         u8 status = DM9000_ior(DM9000_TCR);
-		printf("sending data...\r\n");
+		//printf("sending data...\r\n");
         if(!(status & 0x1))
             break;
     }
 
     /*清除发送状态*/
     DM9000_iow(DM9000_NSR, 0x2c);
-    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
+    //DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
     /*恢复中断*/
     DM9000_iow(DM9000_IMR, 0x81);
-    
+    //printf("eth_send done\r\n");
     return 1;
 }
 
@@ -209,35 +209,58 @@ u16 eth_rx(void)
 	}
 
     /*空读*/
-    ready = DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
+	DM9000_outb(DM9000_MRCMDX, DM9000_IO);
+	ready = DM9000_inw(DM9000_DATA);
+    //ready = DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
 	if((ready & 0x01) != 0x01)
 	{
-		ready = DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
+		DM9000_outb(DM9000_MRCMDX, DM9000_IO);
+		ready = DM9000_inw(DM9000_DATA);
+		//ready = DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
 		if((ready & 0x01) != 0x01)
 		{
+			printf("dummy read error\r\n");
 			return 0;
 		}
 	}
 
     /*读取状态*/
-    status = DM9000_ior(DM9000_MRCMD);
+    //status = DM9000_ior(DM9000_MRCMD);
+	DM9000_outb(DM9000_MRCMD, DM9000_IO);
+	status = DM9000_inw(DM9000_DATA);
 
     /*读取包的长度*/
-    len = DM9000_ior(DM9000_MRCMD);
-	printf("packet length:%d\r\n", len);
+    //len = DM9000_ior(DM9000_MRCMD);
+	DM9000_outb(DM9000_MRCMD, DM9000_IO);
+	len = DM9000_inw(DM9000_DATA);
+	//printf("packet length:%d\r\n", len);
 
-    /*读取包的数据*/
-    if(len < DM9000_PKT_MAX)
+	if((status & 0xbf00) || (len < 0x40) || (len > DM9000_PKT_MAX))
+	{
+		if (status & 0x100) 
+		{
+			printf("rx fifo error\n");
+		}
+		if (status & 0x200) {
+			printf("rx crc error\n");
+		}
+		if (status & 0x8000) {
+			printf("rx length error\n");
+		}
+		if (len > DM9000_PKT_MAX) {
+			printf("rx length too big\n");
+			//dm9000_reset();
+		}
+	}
+
+    for(i = 0; i < len; i +=2)
     {
-        for(i = 0; i < len; i +=2)
-        {
-            tmp = DM9000_inw(DM9000_DATA);
-            buffer[i] = tmp & 0xff;
-            buffer[i+1] = (tmp>>8) & 0xff;
-        }
+        tmp = DM9000_inw(DM9000_DATA);
+        buffer[i] = tmp & 0xff;
+        buffer[i+1] = (tmp>>8) & 0xff;
     }
 
-	net_handle(&buffer[0], len);
+	net_receive(&buffer[0], len);
 
     return len;
 }
