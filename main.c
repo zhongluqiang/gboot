@@ -12,6 +12,10 @@ int gboot_main()
 	button_init();
 	irq_init();
 	
+	lcd_init();
+	lcd_test();
+	
+	
     eth_init();
 
 	while(1)
